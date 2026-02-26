@@ -16,7 +16,10 @@
 package org.eclipse.jdt.ls.core.internal.correction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
@@ -630,6 +633,28 @@ public class UnresolvedTypesQuickFixTest extends AbstractQuickFixTest {
 		Expected e1 = new Expected("Create class 'XXX'", buf.toString());
 
 		assertCodeActionExists(cu, e1);
+	}
+
+	@Test
+	public void testNewCUNoLeadingBlankLine() throws Exception {
+		IPackageFragment pack1 = fSourceFolder.createPackageFragment("test1", false, null);
+		StringBuilder buf = new StringBuilder();
+		buf.append("package test1;\n");
+		buf.append("public class E {\n");
+		buf.append("    MyNewClass obj;\n");
+		buf.append("}\n");
+		ICompilationUnit cu = pack1.createCompilationUnit("E.java", buf.toString(), false, null);
+
+		List<Either<Command, CodeAction>> codeActions = evaluateCodeActions(cu);
+		for (Either<Command, CodeAction> codeAction : codeActions) {
+			if (codeAction.isRight() && "Create class 'MyNewClass'".equals(codeAction.getRight().getTitle())) {
+				String actual = evaluateCodeActionCommand(codeAction);
+				assertFalse(actual.startsWith("\n"), "Generated class file should not start with a blank line");
+				assertTrue(actual.startsWith("package "), "Generated class file should start with package declaration");
+				return;
+			}
+		}
+		fail("Expected code action 'Create class \\'MyNewClass\\'' not found");
 	}
 
 	@Test

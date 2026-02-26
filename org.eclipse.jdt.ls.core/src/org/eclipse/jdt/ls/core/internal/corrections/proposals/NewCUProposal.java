@@ -431,7 +431,10 @@ public class NewCUProposal extends ChangeCorrectionProposalCore {
 		IPackageFragment pack = (IPackageFragment) cu.getParent();
 		String content = CodeGeneration.getCompilationUnitContent(cu, fileComment, typeComment, typeContent, lineDelimiter);
 		if (content != null) {
-
+			// Strip leading blank lines that may result from empty template variables (e.g. ${filecomment})
+			while (content.startsWith(lineDelimiter)) {
+				content = content.substring(lineDelimiter.length());
+			}
 			ASTParser parser = ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);
 			parser.setProject(cu.getJavaProject());
 			parser.setSource(content.toCharArray());
@@ -443,8 +446,9 @@ public class NewCUProposal extends ChangeCorrectionProposalCore {
 		StringBuilder buf = new StringBuilder();
 		if (!pack.isDefaultPackage()) {
 			buf.append("package ").append(pack.getElementName()).append(';'); //$NON-NLS-1$
+			buf.append(lineDelimiter);
 		}
-		buf.append(lineDelimiter).append(lineDelimiter);
+		buf.append(lineDelimiter);
 		buf.append(typeContent);
 		return buf.toString();
 	}
